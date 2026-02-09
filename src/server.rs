@@ -110,6 +110,7 @@ impl Server {
         command.creation_flags(CREATE_NO_WINDOW);
         command.env("FFMPEG_BIN", &self.inner.config.ffmpeg);
         command.env("FFPROBE_BIN", &self.inner.config.ffprobe);
+        command.env("NO_CORS", "1");
         command.arg(&self.inner.config.server);
 
         info!("Starting server.js: {:#?}", command);

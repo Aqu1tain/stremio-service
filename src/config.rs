@@ -78,7 +78,7 @@ impl Config {
             lockfile,
             server,
             updater_endpoint,
-            skip_update: args.skip_updater,
+            skip_update: true,
             force_update: args.force_update,
         })
     }
