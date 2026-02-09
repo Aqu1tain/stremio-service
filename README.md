@@ -1,215 +1,41 @@
-# Stremio Service
+# Stremio Service (Horizon fork)
 
-[![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/stremio/stremio-service/build.yml?label=build%20(master))](https://github.com/Stremio/stremio-service/actions/workflows/build.yml?query=branch%3Amaster)
+[![Upstream](https://img.shields.io/badge/upstream-Stremio%2Fstremio--service-blue)](https://github.com/Stremio/stremio-service)
 
-## Features
+Fork of [stremio-service](https://github.com/Stremio/stremio-service) used by [Stremio Horizon App](https://github.com/Aqu1tain/stremio-horizon-app).
 
-- `default` features - none
-- `bundled` - uses binaries location for an installed(and bundled) application.
+## What changed
 
-## Download
+- **NO_CORS**: Always passes `NO_CORS=1` to `server.js`, allowing the Tauri-based desktop app to communicate with the service from a localhost origin.
+- **No auto-updater**: Disables the built-in update mechanism so the fork stays on its own version and doesn't silently revert to upstream.
 
-You can find the Stremio Service packages in the [releases asset files](https://github.com/Stremio/stremio-service/releases) or by using one of the following urls.
+Everything else is identical to upstream.
 
-_For `dl.strem.io` urls replace `{VERSION}` with the latest release version of Stremio Service in the format `v*.*.*`._
-
-- MacOS: https://dl.strem.io/stremio-service/{VERSION}/StremioService.dmg
-- Windows: https://dl.strem.io/stremio-service/{VERSION}/StremioServiceSetup.exe
-- Debian: https://dl.strem.io/stremio-service/{VERSION}/stremio-service_amd64.deb
-- Redhat: https://dl.strem.io/stremio-service/{VERSION}/stremio-service_x86_64.rpm
-- Flatpak package: https://flathub.org/apps/com.stremio.Service
-
-## Development
+## Build
 
 ```sh
-git clone --recurse-submodules https://github.com/Stremio/stremio-service
+git clone --recurse-submodules https://github.com/Aqu1tain/stremio-service
+cd stremio-service
+cargo build --release --features bundled
 ```
+
+The `build.rs` script automatically downloads companion binaries (`server.js`) during compilation.
+
+Platform-specific companions (`stremio-runtime`, `ffmpeg`, `ffprobe`) are expected in `resources/bin/{os}/`.
 
 ### Requirements
 
-#### Windows
+| Platform | Dependencies |
+|----------|-------------|
+| Linux | `build-essential pkg-config libgtk-3-dev libssl-dev libayatana-appindicator3-dev` |
+| macOS | Xcode command-line tools |
+| Windows | [Inno Setup](https://jrsoftware.org/isdl.php) |
 
-Download & Install [Inno Setup](https://jrsoftware.org/isdl.php).
+## Related repos
 
-
-#### Ubuntu
-
-```sh
-apt install build-essential pkg-config libgtk-3-dev libssl-dev libayatana-appindicator3-dev
-cargo install cargo-deb
-```
-
-#### Fedora
-
-```sh
-dnf install gtk3-devel
-cargo install cargo-generate-rpm
-```
-
-#### MacOS
-
-```sh
-npm install -g create-dmg && brew install graphicsmagick imagemagick
-```
-
-### Run
-
-By default the `stremio-service` binary is ran with `info` log level:
-
-```sh
-RUST_LOG=info cargo run
-```
-
-### Build
-
-```sh
-cargo build --release
-```
-
-### Package
-
-#### Windows
-
-Build the binaries on Windows in release using the `bundled` feature.
-
-```sh
-cargo build --release --features=bundled
-```
-
-Run the Inno Setup compiler `ISCC` command inside `Command Prompt` or `PowerShell` against the `StremioService.iss` script. Depending on your installation the path to `IISC` may vary. Here is an example with the default installation path, presuming your current working directory is the project's root:
-
-```pwsh
-"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "setup\StremioService.iss"
-```
-If you use `PowerShell` you need to prepend `&` in the beginning of the line.
-A new executable should be produced - `StremioServiceSetup.exe`
-
-
-##### Cross-compilation from Linux
-
-1. For cross-compiling on Linux, you need to add the `x86_64-pc-windows-gnu` target:
-
-```sh
-rustup target add x86_64-pc-windows-gnu
-```
-
-2. And build the binary using the `bundled` feature:
-
-```sh
-cargo build --release --target x86_64-pc-windows-gnu --features=bundled
-```
-
-**NOTE:** The Windows installed can **not** be built on other platforms, only **Windows**.
-
-#### Ubuntu
-
-```sh
-cargo deb
-```
-
-#### Fedora
-
-```sh
-cargo build --release --features=bundled
-strip -s target/release/stremio-service
-cargo generate-rpm
-```
-
-#### Flatpak
-
-The Manifest is located [com.stremio.Service.json](./com.stremio.Service.json) and you can bundle the application using the script:
-
-```sh
-./flatpak/build.sh
-```
-
-#### MacOS
-
-Use either `cargo run --bin bundle-macos` or its alias `cargo macos` to build the MacOS `.app` and then build the `dmg` package:
-
-```sh
-cargo macos && create-dmg --overwrite target/macos/*.app target/macos
-```
-
-## Releasing new version
-
-### Release
-
-1. Bump version and update Flatpak
-- Bump version in `Cargo.toml`
-- Flatpak packages - necessary to add the new version and it's date to the [com.stremio.Service.appdata.xml](./resources/com.stremio.service.metainfo.xml) file.
-- Commit `Cargo.toml`, `Cargo.lock` and `resources/com.stremio.service.metainfo.xml`.
-
-2. Make a new tag
-
-`git tag -a v0.XX.XX -m "Service v0.XX.XX"`
-
-3. Push it to the repo
-
-`git push -u origin v0.XX.XX`
-
-4. The [`release` workflow](./.github/workflows/release.yml) will be triggered
-
-### Manual
-
-The `generate_descriptor.js` script is used to generate new version descriptor and upload it to s3. This script is automatically called in the release workflows for Mac OS and Windows. The default behavior is to find the latest artifacts and generate a release candidate descriptor.
-
-### Quick release example
-
-Assuming the release actions finished successfully there will be already a release candidate descriptor. It can be tested by running the service with the `--release-candidate` argument and it should update. If so invoking the `generate_descriptor.js` script with `--release` flag will publish the descriptor to the release channel:
-
-```pwsh
-C:\stremio-service> node .\generate_descriptor.js --tag=v0.1.0 --release
-Descriptor for tag v0.1.0 already exists in the RC folder. Moving it to the releases folder
-Done
-C:\stremio-service>
-```
-
-### Detailed description
-
-In order to run the script the AWS Command Line Interface must be installed on the system and properly configured with credentials that have write permissions to the bucket.
-
-If the `--release` flag is passed the release candidate is copied to the releases destination thus releasing a new version. If there is no release candidate yet for some reason a new release descriptor is generated skipping the candidate.
-
-With the `--tag="vX.X.X..."` argument the script creates a descriptor for the given tag. If there is already released a descriptor for that tag the script exits with an error unless the `--force` flag is set. In this case new descriptor is always generated and the old is overwritten.
-
-By default the script generates a descriptor as long as at least one file is built for the given tag. If the `--wait-all` flag is set the script will exit successfully but it will do nothing unless all the installers for the supported platforms are present. This option is used in the CI to reduce the load.
-
-For testing purposes there is also a `--dry-run` flag. If you use it the descriptor will be generated and printed to the terminal. This flag should work even with read only AWS credentials. Here is an example of the `-dry-run` flag:
-
-```pwsh
-C:\stremio-service> node .\generate_descriptor.js --tag=v0.1.0 --dry-run
-RC Descriptor for tag v0.1.0 already exists
-C:\stremio-service> node .\generate_descriptor.js --tag=v0.1.0 --dry-run --force
-Getting files for tag v0.1.0
-Calculating hashes for files
-The hash for StremioService.dmg is <dmg sha256 hash>
-The hash for StremioServiceSetup.exe is <exe sha256 hash>
-{
-  "version": "0.1.0",
-  "tag": "v0.1.0",
-  "released": "2023-04-13T13:34:53.000Z",
-  "files": [
-    {
-      "name": "StremioService.dmg",
-      "url": "https://s3.example.com/stremio-service/v0.1.0/StremioService.dmg",
-      "os": "macos",
-      "date": "2023-04-13T13:34:53.000Z",
-      "checksum": "<dmg sha256 hash>"
-    },
-    {
-      "name": "StremioServiceSetup.exe",
-      "url": "https://s3.example.com/stremio-service/v0.1.0/StremioServiceSetup.exe",
-      "os": "windows",
-      "date": "2023-04-13T13:30:17.000Z",
-      "checksum": "<exe sha256 hash>"
-    }
-  ]
-}
-```
-
-If the `--quiet` flag is used together with `--dry-run` only the descriptor is printed to `STDOUT`. In case of error the error is printed to `STDERR` and `STDOUT` is blank.
+- [Stremio Horizon](https://github.com/Aqu1tain/stremio-horizon) — frontend
+- [Stremio Horizon App](https://github.com/Aqu1tain/stremio-horizon-app) — desktop app
 
 ## License
 
-GPL-2.0 [LICENSE.md](LICENSE.md)
+GPL-2.0 — see [LICENSE.md](LICENSE.md).
