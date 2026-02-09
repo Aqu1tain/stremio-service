@@ -2,7 +2,7 @@
 
 [![Upstream](https://img.shields.io/badge/upstream-Stremio%2Fstremio--service-blue)](https://github.com/Stremio/stremio-service)
 
-Fork of [stremio-service](https://github.com/Stremio/stremio-service) used by [Stremio Horizon App](https://github.com/Aqu1tain/stremio-horizon-app).
+Fork of [stremio-service](https://github.com/Stremio/stremio-service) used by [Stremio Horizon App](https://github.com/Aqu1tain/stremio-horizon-app). Stremio Horizon is not a replacement for [Stremio](https://www.stremio.com) — go star the original!
 
 ## What changed
 
