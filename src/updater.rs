@@ -76,7 +76,7 @@ impl Updater {
 
             match self.autoupdate().await {
                 Ok(Some(update)) => {
-                    info!("Found update v{}", update.version.to_string());
+                    info!("Found update v{}", update.version);
 
                     self.run_updater_setup(update.file);
                     return true;
@@ -90,7 +90,7 @@ impl Updater {
     }
 
     async fn check_for_update(&self) -> Result<(FileItem, Version), anyhow::Error> {
-        info!("Using updater endpoint {}", &self.endpoint);
+        info!("Using updater endpoint {}", self.endpoint);
         let update_response = reqwest::get(self.endpoint.clone())
             .await
             .context("Cannot fetch response from the updater endpoint")?
