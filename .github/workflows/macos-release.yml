@@ -2,15 +2,14 @@
 name: MacOS Release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [published]
 
 jobs:
   macos-release:
-    runs-on: macos-latest
+    runs-on: macOS-15-intel
     env:
-      APP_IDENTITY: "FA18F75D76A5D513F8465C671CD0FE2F7F9AA848"
+      APP_IDENTITY: "5758FFF7E17363FB160E351598030EE7A20988BD"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -38,8 +37,7 @@ jobs:
           security default-keychain -s build.keychain
           security set-keychain-settings build.keychain
           security unlock-keychain -p stremioservice build.keychain
-          security import ./resources/certificates/developer_id_Installer.p12 -k build.keychain -P ${{ secrets.APPLE_CERTIFICATE_PASSWORD }} -T /usr/bin/codesign
-          security import ./resources/certificates/developer_id_app.p12 -k build.keychain -P ${{ secrets.APPLE_CERTIFICATE_PASSWORD }} -T /usr/bin/codesign
+          security import ./resources/certificates/Certificates.p12 -k build.keychain -P ${{ secrets.APPLE_DEVELOPER_CERT_PASS_2 }} -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k stremioservice build.keychain
           security find-identity -v
       - name: Sign app
@@ -50,11 +48,11 @@ jobs:
           ditto -c -k --sequesterRsrc --keepParent target/macos/StremioService.app target/macos/StremioService.app.zip
       - name: Notarize app
         env:
-          NOTARIZATION_PWD: ${{ secrets.APPLE_DEVACCOUNT_NOTARIZATION_APP_SPECIFIC_PWD }}
-          TEAM_ID: ${{ secrets.TEAM_ID }}
+          NOTARIZATION_PWD: ${{ secrets.APPLE_DEVACCOUNT_NOTARIZATION_APP_SPECIFIC_PWD_2 }}
+          TEAM_ID: ${{ secrets.APPLE_DEVELOPER_TEAM_ID_2 }}
         run: |
           echo "Create keychain profile"
-          xcrun notarytool store-credentials "notarytool-profile" --apple-id "ivo@linvo.com" --team-id "$TEAM_ID" --password "$NOTARIZATION_PWD"
+          xcrun notarytool store-credentials "notarytool-profile" --apple-id "app@stremio.com" --team-id "$TEAM_ID" --password "$NOTARIZATION_PWD"
           echo "Notarize app"
           xcrun notarytool submit target/macos/StremioService.app.zip --keychain-profile "notarytool-profile" --wait
           echo Stapling the app...
@@ -88,17 +86,11 @@ jobs:
         with:
           files: resources/bin/macos/ffmpeg resources/bin/macos/ffprobe resources/bin/macos/stremio-runtime target/release/stremio-service resources/bin/macos/server.js LICENSE.md
           dest: stremio-service-macos.zip
-      - name: Get current date
-        id: date
-        run: echo "TODAY_DATE=$(date +'%d %b %Y')" >> $GITHUB_OUTPUT
-      - name: Upload dmg and zip file to release
-        uses: softprops/action-gh-release@v1
+
+      - name: Upload dmg and zip files
+        uses: softprops/action-gh-release@v2
         with:
-          # Use the same name as all releases!
-          name: Stremio Service ${{ github.ref_name }} (${{ steps.date.outputs.TODAY_DATE }})
-          draft: true
-          prerelease: false
-          fail_on_unmatched_files: true
           files: |
             target/macos/StremioService.dmg
             stremio-service-macos.zip
+
